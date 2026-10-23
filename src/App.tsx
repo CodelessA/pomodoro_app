@@ -13,11 +13,14 @@ import {
   Coffee,
   Brain,
   Moon,
+  Minimize2,
+  Maximize2,
 } from "lucide-react";
 import {
   minimizeWindow,
   closeWindow,
   setAlwaysOnTop,
+  resizeWindow,
   notifyTimerDone,
 } from "./services/tauriBridge";
 import { sound } from "./utils/sound";
@@ -83,6 +86,7 @@ export default function App() {
   const [completedSessions, setCompletedSessions] = useState<number>(0);
   const [isPinned, setIsPinned] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isCompact, setIsCompact] = useState<boolean>(false);
   const [, startTransition] = useTransition();
 
   const timerRef = useRef<number | null>(null);
@@ -208,6 +212,18 @@ export default function App() {
     setIsPinned(applied);
   };
 
+  // Toggle Compact Mode
+  const toggleCompactMode = async () => {
+    sound.playClick();
+    if (!isCompact) {
+      await resizeWindow(176, 44);
+      setIsCompact(true);
+    } else {
+      await resizeWindow(320, 420);
+      setIsCompact(false);
+    }
+  };
+
   // Format MM:SS
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -216,7 +232,7 @@ export default function App() {
 
   // Circular progress calculation
   const totalDuration = activeConfig.duration;
-  const progressPercent = (timeLeft / totalDuration);
+  const progressPercent = timeLeft / totalDuration;
   const radius = 64;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - progressPercent * circumference;
@@ -226,6 +242,72 @@ export default function App() {
 
   const ModeIcon = activeConfig.icon;
 
+  // COMPACT MODE RENDER (Minimalist floating pill with time and pin preserved)
+  if (isCompact) {
+    return (
+      <div
+        data-tauri-drag-region
+        className="tauri-drag relative flex items-center justify-between w-screen h-screen px-2 py-1 bg-[#0d0e12]/95 backdrop-blur-md text-neutral-100 select-none overflow-hidden rounded-full border border-white/20 shadow-2xl cursor-grab active:cursor-grabbing"
+      >
+        {/* Left: Play/Pause button with mode indicator */}
+        <button
+          type="button"
+          onClick={togglePlay}
+          title={isRunning ? "Pauza" : "Start"}
+          className="no-drag flex items-center justify-center p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
+        >
+          {isRunning ? (
+            <Pause className="w-3.5 h-3.5 fill-current text-rose-400" />
+          ) : (
+            <Play className="w-3.5 h-3.5 fill-current ml-0.5 text-emerald-400" />
+          )}
+        </button>
+
+        {/* Center: Digital Time */}
+        <div
+          onClick={togglePlay}
+          title="Kliknij, aby wstrzymać / wznowić"
+          className="no-drag cursor-pointer flex items-center space-x-1.5 px-1 py-0.5 rounded hover:bg-white/[0.05] transition-colors"
+        >
+          <div
+            className={`w-1.5 h-1.5 rounded-full transition-all ${
+              isRunning ? "bg-emerald-400 animate-pulse" : "bg-neutral-500"
+            }`}
+          />
+          <span className="font-mono-numbers text-sm font-bold tracking-tight text-white drop-shadow-sm">
+            {formattedMinutes}:{formattedSeconds}
+          </span>
+        </div>
+
+        {/* Right: Pin Toggle & Expand back */}
+        <div className="flex items-center space-x-0.5 no-drag">
+          <button
+            type="button"
+            onClick={handleTogglePin}
+            title={isPinned ? "Odepnij okno (Na wierzchu: WŁ)" : "Przypnij na wierzchu"}
+            className={`p-1 rounded-full transition-colors ${
+              isPinned
+                ? "text-amber-400 bg-amber-400/15"
+                : "text-neutral-400 hover:text-neutral-200 hover:bg-white/10"
+            }`}
+          >
+            <Pin className={`w-3 h-3 ${isPinned ? "fill-amber-400 rotate-45" : ""}`} />
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleCompactMode}
+            title="Przywróć pełny rozmiar okna"
+            className="p-1 rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // STANDARD MODE RENDER (320x420)
   return (
     <div
       className="relative flex flex-col h-screen w-screen bg-[#0d0e12] text-neutral-100 select-none overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-colors duration-500"
@@ -283,6 +365,16 @@ export default function App() {
             className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.08] transition-colors"
           >
             <Minus className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Compact Mode Toggle (next to close icon) */}
+          <button
+            type="button"
+            onClick={toggleCompactMode}
+            title="Tryb kompaktowy"
+            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.08] transition-colors"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
           </button>
 
           {/* Close Window */}

@@ -1,4 +1,4 @@
-use tauri::WebviewWindow;
+use tauri::{LogicalSize, Size, WebviewWindow};
 
 #[tauri::command]
 fn minimize_window(window: WebviewWindow) {
@@ -16,6 +16,13 @@ fn toggle_always_on_top(window: WebviewWindow, always_on_top: bool) -> Result<bo
     Ok(always_on_top)
 }
 
+#[tauri::command]
+fn resize_window(window: WebviewWindow, width: f64, height: f64) -> Result<(), String> {
+    window
+        .set_size(Size::Logical(LogicalSize { width, height }))
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -24,7 +31,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             minimize_window,
             close_window,
-            toggle_always_on_top
+            toggle_always_on_top,
+            resize_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

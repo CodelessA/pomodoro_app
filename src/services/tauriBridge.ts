@@ -5,6 +5,20 @@ import {
   requestPermission,
   sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { LogicalSize } from "@tauri-apps/api/dpi";
+
+export async function resizeWindow(width: number, height: number): Promise<void> {
+  try {
+    await invoke("resize_window", { width, height });
+  } catch {
+    try {
+      const win = getCurrentWindow();
+      await win.setSize(new LogicalSize(width, height));
+    } catch (e) {
+      console.warn("Failed to resize window:", e);
+    }
+  }
+}
 
 export async function minimizeWindow(): Promise<void> {
   try {
